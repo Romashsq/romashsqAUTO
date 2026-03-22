@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: romashsq-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: WEBHOOK_URL
+        sync: false
+      - key: ADMIN_ID
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: SPREADSHEET_ID
+        sync: false
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
