@@ -1,17 +1,29 @@
 import { InlineKeyboard } from 'grammy'
 import SERVICES from '../data/services.js'
 
+const buildPriceKb = () => {
+  const kb = new InlineKeyboard()
+  SERVICES.forEach((s) => kb.text(s.name, `price_${s.id}`).row())
+  kb.text('🏠 Головне меню', 'menu_main')
+  return kb
+}
+
 export default (bot) => {
-  bot.callbackQuery('menu_price', async (ctx) => {
-    await ctx.answerCallbackQuery()
-    const kb = new InlineKeyboard()
-    SERVICES.forEach((s) => kb.text(s.name, `price_${s.id}`).row())
-    kb.text('🏠 Головне меню', 'menu_main')
-    await ctx.editMessageText('💰 *Прайс-лист*\n\nОберіть послугу для перегляду цін:', {
+  const showPrice = async (ctx) => {
+    const opts = {
       parse_mode: 'Markdown',
-      reply_markup: kb,
-    })
-  })
+      reply_markup: buildPriceKb(),
+    }
+    if (ctx.callbackQuery) {
+      await ctx.answerCallbackQuery()
+      await ctx.editMessageText('💰 *Прайс-лист*\n\nОберіть послугу для перегляду цін:', opts)
+    } else {
+      await ctx.reply('💰 *Прайс-лист*\n\nОберіть послугу для перегляду цін:', opts)
+    }
+  }
+
+  bot.callbackQuery('menu_price', showPrice)
+  bot.hears('💰 Прайс', showPrice)
 
   SERVICES.forEach((service) => {
     bot.callbackQuery(`price_${service.id}`, async (ctx) => {

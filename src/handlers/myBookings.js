@@ -9,39 +9,42 @@ function formatDate(dateStr) {
   return `${dayNames[date.getDay()]}, ${date.getDate()} ${monthNames[date.getMonth()]}`
 }
 
-export default (bot) => {
-  bot.callbackQuery('menu_my_bookings', async (ctx) => {
-    await ctx.answerCallbackQuery()
-    const bookings = await getClientBookings(ctx.chat.id)
+async function showMyBookings(ctx) {
+  if (ctx.callbackQuery) await ctx.answerCallbackQuery()
+  const bookings = await getClientBookings(ctx.chat.id)
 
-    if (bookings.length === 0) {
-      await ctx.editMessageText(
-        `📝 *Мої записи*\n\nУ вас поки немає активних записів.\n\nЗапишіться на послугу прямо зараз! 🚗`,
-        {
-          parse_mode: 'Markdown',
-          reply_markup: new InlineKeyboard()
-            .text('📋 Записатись', 'menu_booking').row()
-            .text('🏠 Головне меню', 'menu_main'),
-        }
-      )
-      return
+  if (bookings.length === 0) {
+    const text = `📝 *Мої записи*\n\nУ вас поки немає активних записів.\n\nЗапишіться на послугу прямо зараз! 🚗`
+    const opts = {
+      parse_mode: 'Markdown',
+      reply_markup: new InlineKeyboard()
+        .text('📋 Записатись', 'menu_booking').row()
+        .text('🏠 Головне меню', 'menu_main'),
     }
+    if (ctx.callbackQuery) await ctx.editMessageText(text, opts)
+    else await ctx.reply(text, opts)
+    return
+  }
 
-    let text = `📝 *Ваші записи:*\n\n`
-    const kb = new InlineKeyboard()
-
-    bookings.forEach((b, i) => {
-      text += `*${i + 1}.* ${b.service}\n`
-      text += `   👨‍🔧 ${b.master}\n`
-      text += `   📅 ${formatDate(b.date)} о ${b.time}\n\n`
-      kb.text(`❌ Скасувати запис ${i + 1}`, `cancel_booking:${b._id}`).row()
-    })
-
-    kb.text('📋 Новий запис', 'menu_booking').row()
-    kb.text('🏠 Головне меню', 'menu_main')
-
-    await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: kb })
+  let text = `📝 *Ваші записи:*\n\n`
+  const kb = new InlineKeyboard()
+  bookings.forEach((b, i) => {
+    text += `*${i + 1}.* ${b.service}\n`
+    text += `   👨‍🔧 ${b.master}\n`
+    text += `   📅 ${formatDate(b.date)} о ${b.time}\n\n`
+    kb.text(`❌ Скасувати запис ${i + 1}`, `cancel_booking:${b._id}`).row()
   })
+  kb.text('📋 Новий запис', 'menu_booking').row()
+  kb.text('🏠 Головне меню', 'menu_main')
+
+  const opts = { parse_mode: 'Markdown', reply_markup: kb }
+  if (ctx.callbackQuery) await ctx.editMessageText(text, opts)
+  else await ctx.reply(text, opts)
+}
+
+export default (bot) => {
+  bot.callbackQuery('menu_my_bookings', showMyBookings)
+  bot.hears('📝 Мої записи', showMyBookings)
 
   bot.callbackQuery(/^cancel_booking:/, async (ctx) => {
     await ctx.answerCallbackQuery()

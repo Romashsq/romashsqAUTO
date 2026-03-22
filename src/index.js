@@ -6,12 +6,13 @@ import { BOT_TOKEN, WEBHOOK_URL, PORT } from './config.js'
 import { initSheets } from './services/sheets.js'
 import { connectDB } from './db/connection.js'
 import { startReminders } from './services/reminders.js'
-import registerStart from './handlers/start.js'
+import registerStart, { REPLY_KEYBOARD } from './handlers/start.js'
 import registerBooking, { handlePhoneInput } from './handlers/booking.js'
 import registerPrice from './handlers/price.js'
 import registerInfo from './handlers/info.js'
 import registerMyBookings from './handlers/myBookings.js'
 import registerAdmin, { handleAdminText } from './handlers/admin.js'
+
 
 if (!BOT_TOKEN) throw new Error('BOT_TOKEN is not set in .env')
 
@@ -27,11 +28,12 @@ registerAdmin(bot)
 
 // ── Text message handler ───────────────────────────────────────────────────
 bot.on('message:text', async (ctx) => {
-  // Delegate to booking phone step if active
   if (await handleAdminText(ctx, bot)) return
   if (await handlePhoneInput(ctx)) return
 
-  await ctx.reply('Скористайтесь кнопками меню або надішліть /start 👇')
+  await ctx.reply('Скористайтесь кнопками меню або надішліть /start 👇', {
+    reply_markup: REPLY_KEYBOARD,
+  })
 })
 
 // ── Error handler ──────────────────────────────────────────────────────────

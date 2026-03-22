@@ -112,14 +112,18 @@ export async function handlePhoneInput(ctx) {
 
 export default (bot) => {
   // ── Enter booking ──────────────────────────────────────────────────────
-  bot.callbackQuery('menu_booking', async (ctx) => {
-    await ctx.answerCallbackQuery()
+  const startBooking = async (ctx) => {
     await setState(ctx.from.id, { mode: 'booking', step: 'service' })
-    await ctx.editMessageText('🔧 *Оберіть послугу:*', {
-      parse_mode: 'Markdown',
-      reply_markup: buildServicesKb(),
-    })
-  })
+    const opts = { parse_mode: 'Markdown', reply_markup: buildServicesKb() }
+    if (ctx.callbackQuery) {
+      await ctx.answerCallbackQuery()
+      await ctx.editMessageText('🔧 *Оберіть послугу:*', opts)
+    } else {
+      await ctx.reply('🔧 *Оберіть послугу:*', opts)
+    }
+  }
+  bot.callbackQuery('menu_booking', startBooking)
+  bot.hears('📋 Записатись', startBooking)
 
   // ── Service selected ───────────────────────────────────────────────────
   bot.callbackQuery(/^service_/, async (ctx) => {
