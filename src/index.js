@@ -72,7 +72,12 @@ if (WEBHOOK_URL) {
       res.end('OK')
       return
     }
-    await handleUpdate(req, res)
+    try {
+      await handleUpdate(req, res)
+    } catch (e) {
+      console.error('Webhook error:', e.message)
+      res.writeHead(200).end()
+    }
   })
 
   server.listen(PORT, () => console.log(`✅ Webhook server on port ${PORT}`))
