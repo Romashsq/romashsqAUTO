@@ -7,19 +7,24 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID
 
 // Auth — use env var in production, file in development
-let credentials
-if (process.env.GOOGLE_CREDENTIALS_JSON) {
-  credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON)
-} else {
-  credentials = JSON.parse(
-    readFileSync(resolve(__dirname, '../../google-credentials.json'), 'utf8')
-  )
+let sheets = null
+try {
+  let credentials
+  if (process.env.GOOGLE_CREDENTIALS_JSON) {
+    credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON)
+  } else {
+    credentials = JSON.parse(
+      readFileSync(resolve(__dirname, '../../google-credentials.json'), 'utf8')
+    )
+  }
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  })
+  sheets = google.sheets({ version: 'v4', auth })
+} catch (e) {
+  console.warn('⚠️ Google Sheets init failed:', e.message)
 }
-const auth = new google.auth.GoogleAuth({
-  credentials,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-})
-const sheets = google.sheets({ version: 'v4', auth })
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 export async function getRows(sheetName) {
