@@ -71,9 +71,9 @@ if (WEBHOOK_URL) {
     await handleUpdate(req, res)
   })
 
+  server.listen(PORT, () => console.log(`✅ Webhook server on port ${PORT}`))
   await setup()
   await bot.api.setWebhook(WEBHOOK_URL)
-  server.listen(PORT, () => console.log(`✅ Webhook server on port ${PORT}`))
 } else {
   // Development: polling mode
   await setup()
