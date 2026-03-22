@@ -77,7 +77,12 @@ if (WEBHOOK_URL) {
 
   server.listen(PORT, () => console.log(`✅ Webhook server on port ${PORT}`))
   await setup()
-  await bot.api.setWebhook(WEBHOOK_URL)
+  try {
+    await bot.api.setWebhook(WEBHOOK_URL)
+    console.log('✅ Webhook set:', WEBHOOK_URL)
+  } catch (e) {
+    console.error('❌ setWebhook failed:', e.message)
+  }
 } else {
   // Development or Render without webhook — start HTTP health server + polling
   const server = createServer((req, res) => {
