@@ -59,6 +59,10 @@ async function setup() {
 }
 
 // ── Launch ─────────────────────────────────────────────────────────────────
+console.log('Starting bot...')
+console.log('WEBHOOK_URL:', WEBHOOK_URL || 'not set → polling mode')
+console.log('PORT:', PORT)
+
 if (WEBHOOK_URL) {
   // Production: webhook mode (Render)
   const handleUpdate = webhookCallback(bot, 'http')
@@ -75,7 +79,12 @@ if (WEBHOOK_URL) {
   await setup()
   await bot.api.setWebhook(WEBHOOK_URL)
 } else {
-  // Development: polling mode
+  // Development or Render without webhook — start HTTP health server + polling
+  const server = createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' })
+    res.end('OK')
+  })
+  server.listen(PORT, () => console.log(`✅ Health server on port ${PORT}`))
   await setup()
   await bot.start({ onStart: () => console.log('✅ Bot polling started') })
 }
