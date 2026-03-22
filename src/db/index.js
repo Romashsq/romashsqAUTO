@@ -53,6 +53,10 @@ export async function getTomorrowBookings() {
   return Booking.find({ date: tomorrowStr, status: 'підтверджено' })
 }
 
+export async function getBookingsByMasterAndDate(master, date) {
+  return Booking.find({ master, date, status: { $nin: ['скасовано'] } })
+}
+
 export async function updateBookingStatus(bookingId, status) {
   return Booking.findByIdAndUpdate(bookingId, { status, updatedAt: new Date() })
 }

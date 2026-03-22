@@ -8,11 +8,11 @@ import {
   getBookingById,
   getStats,
 } from '../db/index.js'
+import { getState, setState, clearState } from '../state.js'
 
 function isAdmin(ctx) {
   return String(ctx.from.id) === String(ADMIN_ID)
 }
-
 
 const ADMIN_MENU = new InlineKeyboard()
   .text('📅 Сьогодні', 'adm_today').text('👥 Клієнти', 'adm_clients').row()
@@ -44,7 +44,7 @@ export default (bot) => {
     let text = `📅 *Записи на сьогодні (${bookings.length}):*\n\n`
     const kb = new InlineKeyboard()
 
-    bookings.forEach((b, _i) => {
+    bookings.forEach((b) => {
       const icon = { 'готово': '✅', 'в роботі': '🔧', 'підтверджено': '🕐' }[b.status] || '🕐'
       text += `${icon} *${b.time}* — ${b.service}\n`
       text += `   👤 ${b.name} (${b.phone})\n`
@@ -144,8 +144,7 @@ export default (bot) => {
   bot.callbackQuery('adm_broadcast', async (ctx) => {
     if (!isAdmin(ctx)) return
     await ctx.answerCallbackQuery()
-    const { setState } = await import('../state.js')
-    setState(ctx.from.id, { adminMode: 'broadcast' })
+    await setState(ctx.from.id, { adminMode: 'broadcast' })
     await ctx.editMessageText(
       `📢 *Розсилка*\n\nНадішліть текст повідомлення:`,
       {
@@ -159,6 +158,7 @@ export default (bot) => {
   bot.callbackQuery('adm_menu', async (ctx) => {
     if (!isAdmin(ctx)) return
     await ctx.answerCallbackQuery()
+    await clearState(ctx.from.id)
     await ctx.editMessageText(
       `🔧 *Панель адміністратора*\n_${AUTOSERVICE.name}_`,
       { parse_mode: 'Markdown', reply_markup: ADMIN_MENU }
@@ -168,11 +168,13 @@ export default (bot) => {
 
 // ── Broadcast text handler ─────────────────────────────────────────────────
 export async function handleAdminText(ctx, bot) {
-  const { getState, setState } = await import('../state.js')
   const userId = String(ctx.from.id)
-  if (userId !== String(ADMIN_ID) || getState(userId).adminMode !== 'broadcast') return false
+  if (userId !== String(ADMIN_ID)) return false
 
-  setState(userId, { adminMode: null })
+  const s = await getState(userId)
+  if (s.adminMode !== 'broadcast') return false
+
+  await clearState(userId)
   const text = ctx.message.text
   const clients = await getAllClients()
   let sent = 0
