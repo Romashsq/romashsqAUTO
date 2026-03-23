@@ -1,6 +1,7 @@
 import { InlineKeyboard } from 'grammy'
 import SERVICES from '../data/services.js'
 import { addBooking as addBookingDB, upsertClient, getBookingsByMasterAndDate } from '../db/index.js'
+import { addBooking as addBookingSheets, upsertClient as upsertClientSheets } from '../services/sheets.js'
 import { AUTOSERVICE } from '../config.js'
 import { getState, setState, clearState } from '../state.js'
 
@@ -207,7 +208,7 @@ export default (bot) => {
     if (s.mode !== 'booking') return
     await ctx.answerCallbackQuery()
 
-    await addBookingDB({
+    const bookingData = {
       telegramId: ctx.chat.id,
       name: ctx.from.first_name,
       phone: s.phone,
@@ -215,23 +216,34 @@ export default (bot) => {
       master: s.master,
       date: s.date,
       time: s.time,
-    })
+    }
+    await addBookingDB(bookingData)
     await upsertClient({
       telegramId: ctx.chat.id,
       name: ctx.from.first_name,
       username: ctx.from.username,
       phone: s.phone,
     })
+
+    // Sync to Google Sheets (non-blocking)
+    addBookingSheets(bookingData).catch((e) => console.warn('Sheets addBooking error:', e.message))
+    upsertClientSheets({
+      telegramId: ctx.chat.id,
+      name: ctx.from.first_name,
+      username: ctx.from.username,
+      phone: s.phone,
+    }).catch((e) => console.warn('Sheets upsertClient error:', e.message))
+
     await clearState(userId)
 
     await ctx.editMessageText(
-      `🎉 *Запис підтверджено\\!*\n\n` +
+      `🎉 *Запис підтверджено!*\n\n` +
         `${s.service.name}\n` +
         `👨‍🔧 ${s.master}\n` +
         `📅 ${formatDateFull(s.date)} о ${s.time}\n\n` +
-        `📍 ${AUTOSERVICE.address}\n\nДо зустрічі\\! 🙌`,
+        `📍 ${AUTOSERVICE.address}\n\nДо зустрічі! 🙌`,
       {
-        parse_mode: 'MarkdownV2',
+        parse_mode: 'Markdown',
         reply_markup: new InlineKeyboard().text('🏠 Головне меню', 'menu_main'),
       }
     )

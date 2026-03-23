@@ -47,9 +47,9 @@ export default (bot) => {
 
   bot.callbackQuery('menu_main', async (ctx) => {
     await ctx.answerCallbackQuery()
-    await ctx.editMessageText('🏠 *Головне меню*\n\nОберіть потрібний розділ:', {
+    await ctx.editMessageText('🏠 *Головне меню*\n\nОберіть потрібний розділ через кнопки нижче 👇', {
       parse_mode: 'Markdown',
-      reply_markup: MAIN_MENU,
+      reply_markup: new InlineKeyboard(),
     })
   })
 }
