@@ -1,41 +1,35 @@
 import { InlineKeyboard } from 'grammy'
 import { getClientBookings, updateBookingStatus } from '../db/index.js'
-
-function formatDate(dateStr) {
-  const [y, m, d] = dateStr.split('-')
-  const date = new Date(y, m - 1, d)
-  const dayNames = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
-  const monthNames = ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру']
-  return `${dayNames[date.getDay()]}, ${date.getDate()} ${monthNames[date.getMonth()]}`
-}
+import { t, getLang, formatDateStr } from '../i18n/index.js'
 
 async function showMyBookings(ctx) {
   if (ctx.callbackQuery) await ctx.answerCallbackQuery()
+  const lang = await getLang(ctx.from?.id || ctx.chat?.id)
   const bookings = await getClientBookings(ctx.chat.id)
 
   if (bookings.length === 0) {
-    const text = `📝 *Мої записи*\n\nУ вас поки немає активних записів.\n\nЗапишіться на послугу прямо зараз! 🚗`
+    const text = t(lang, 'noBookings')
     const opts = {
       parse_mode: 'Markdown',
       reply_markup: new InlineKeyboard()
-        .text('📋 Записатись', 'menu_booking').row()
-        .text('🏠 Головне меню', 'menu_main'),
+        .text(t(lang, 'btnBook'), 'menu_booking').row()
+        .text(t(lang, 'btnMainMenu'), 'menu_main'),
     }
     if (ctx.callbackQuery) await ctx.editMessageText(text, opts)
     else await ctx.reply(text, opts)
     return
   }
 
-  let text = `📝 *Ваші записи:*\n\n`
+  let text = t(lang, 'yourBookings')
   const kb = new InlineKeyboard()
   bookings.forEach((b, i) => {
     text += `*${i + 1}.* ${b.service}\n`
     text += `   👨‍🔧 ${b.master}\n`
-    text += `   📅 ${formatDate(b.date)} о ${b.time}\n\n`
-    kb.text(`❌ Скасувати запис ${i + 1}`, `cancel_booking:${b._id}`).row()
+    text += `   📅 ${formatDateStr(b.date, lang)} о ${b.time}\n\n`
+    kb.text(`❌ ${i + 1}`, `cancel_booking:${b._id}`).row()
   })
-  kb.text('📋 Новий запис', 'menu_booking').row()
-  kb.text('🏠 Головне меню', 'menu_main')
+  kb.text(t(lang, 'btnNewBooking'), 'menu_booking').row()
+  kb.text(t(lang, 'btnMainMenu'), 'menu_main')
 
   const opts = { parse_mode: 'Markdown', reply_markup: kb }
   if (ctx.callbackQuery) await ctx.editMessageText(text, opts)
@@ -44,34 +38,30 @@ async function showMyBookings(ctx) {
 
 export default (bot) => {
   bot.callbackQuery('menu_my_bookings', showMyBookings)
-  bot.hears('📝 Мої записи', showMyBookings)
+  bot.hears(['📝 Мої записи', '📝 Мои записи'], showMyBookings)
 
   bot.callbackQuery(/^cancel_booking:/, async (ctx) => {
     await ctx.answerCallbackQuery()
+    const lang = await getLang(ctx.from.id)
     const bookingId = ctx.callbackQuery.data.replace('cancel_booking:', '')
-    await ctx.editMessageText(
-      `❓ *Підтвердіть скасування*\n\nВи впевнені що хочете скасувати цей запис?`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: new InlineKeyboard()
-          .text('✅ Так, скасувати', `confirm_cancel:${bookingId}`)
-          .text('← Назад', 'menu_my_bookings'),
-      }
-    )
+    await ctx.editMessageText(t(lang, 'cancelConfirm'), {
+      parse_mode: 'Markdown',
+      reply_markup: new InlineKeyboard()
+        .text(t(lang, 'btnCancelYes'), `confirm_cancel:${bookingId}`)
+        .text(t(lang, 'btnBack'), 'menu_my_bookings'),
+    })
   })
 
   bot.callbackQuery(/^confirm_cancel:/, async (ctx) => {
     await ctx.answerCallbackQuery()
+    const lang = await getLang(ctx.from.id)
     const bookingId = ctx.callbackQuery.data.replace('confirm_cancel:', '')
     await updateBookingStatus(bookingId, 'скасовано')
-    await ctx.editMessageText(
-      `✅ *Запис скасовано*\n\nЯкщо бажаєте записатись знову — натисніть кнопку нижче.`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: new InlineKeyboard()
-          .text('📋 Записатись', 'menu_booking').row()
-          .text('🏠 Головне меню', 'menu_main'),
-      }
-    )
+    await ctx.editMessageText(t(lang, 'cancelDone'), {
+      parse_mode: 'Markdown',
+      reply_markup: new InlineKeyboard()
+        .text(t(lang, 'btnBook'), 'menu_booking').row()
+        .text(t(lang, 'btnMainMenu'), 'menu_main'),
+    })
   })
 }

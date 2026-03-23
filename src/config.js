@@ -2,6 +2,7 @@ export const BOT_TOKEN = process.env.BOT_TOKEN
 export const ADMIN_ID = process.env.ADMIN_ID
 export const WEBHOOK_URL = process.env.WEBHOOK_URL
 export const PORT = process.env.PORT || 3000
+export const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY
 
 export const AUTOSERVICE = {
   name: 'Romashsq Autoservice',

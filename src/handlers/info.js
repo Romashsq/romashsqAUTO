@@ -1,44 +1,49 @@
 import { InlineKeyboard } from 'grammy'
 import { AUTOSERVICE } from '../config.js'
-
-const BACK = new InlineKeyboard().text('🏠 Головне меню', 'menu_main')
+import { t, getLang } from '../i18n/index.js'
 
 export default (bot) => {
   const showAddress = async (ctx) => {
-    const text = `📍 *Наша адреса:*\n\n${AUTOSERVICE.address}\n\n[Відкрити на Google Maps](${AUTOSERVICE.mapLink})`
+    const lang = await getLang(ctx.from?.id || ctx.chat?.id)
+    const text = t(lang, 'address', AUTOSERVICE.address, AUTOSERVICE.mapLink)
+    const back = new InlineKeyboard().text(t(lang, 'btnMainMenu'), 'menu_main')
     if (ctx.callbackQuery) {
       await ctx.answerCallbackQuery()
-      await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: BACK })
+      await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: back })
     } else {
-      await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: BACK })
+      await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: back })
     }
   }
 
   const showHours = async (ctx) => {
-    const text = `🕐 *Години роботи:*\n\n${AUTOSERVICE.hours}\n\nСубота та неділя — вихідний`
+    const lang = await getLang(ctx.from?.id || ctx.chat?.id)
+    const text = t(lang, 'hours', AUTOSERVICE.hours)
+    const back = new InlineKeyboard().text(t(lang, 'btnMainMenu'), 'menu_main')
     if (ctx.callbackQuery) {
       await ctx.answerCallbackQuery()
-      await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: BACK })
+      await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: back })
     } else {
-      await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: BACK })
+      await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: back })
     }
   }
 
   const showContact = async (ctx) => {
-    const text = `📞 *Контакти:*\n\nТелефон: ${AUTOSERVICE.phone}\nАдреса: ${AUTOSERVICE.address}\n\nПишіть нам прямо тут — ми відповімо! 💬`
+    const lang = await getLang(ctx.from?.id || ctx.chat?.id)
+    const text = t(lang, 'contact', AUTOSERVICE.phone, AUTOSERVICE.address)
+    const back = new InlineKeyboard().text(t(lang, 'btnMainMenu'), 'menu_main')
     if (ctx.callbackQuery) {
       await ctx.answerCallbackQuery()
-      await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: BACK })
+      await ctx.editMessageText(text, { parse_mode: 'Markdown', reply_markup: back })
     } else {
-      await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: BACK })
+      await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: back })
     }
   }
 
   bot.callbackQuery('menu_address', showAddress)
-  bot.hears('📍 Адреса', showAddress)
+  bot.hears(['📍 Адреса', '📍 Адрес'], showAddress)
 
   bot.callbackQuery('menu_hours', showHours)
-  bot.hears('🕐 Години роботи', showHours)
+  bot.hears(['🕐 Години роботи', '🕐 Часы работы'], showHours)
 
   bot.callbackQuery('menu_contact', showContact)
   bot.hears('📞 Контакт', showContact)

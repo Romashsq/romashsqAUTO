@@ -1,6 +1,6 @@
 import cron from 'node-cron'
-import { getTomorrowBookings, getClientsForReminder, getAllClients, wasNotificationSent, markNotificationSent } from '../db/index.js'
-import { AUTOSERVICE } from '../config.js'
+import { getTomorrowBookings, getClientsForReminder, getAllClients, wasNotificationSent, markNotificationSent, getWeeklyStats } from '../db/index.js'
+import { AUTOSERVICE, ADMIN_ID } from '../config.js'
 
 export function startReminders(bot) {
   // ── Щодня о 10:00 — нагадування про завтрашній запис ──────────────────
@@ -80,6 +80,27 @@ export function startReminders(bot) {
       }
     } catch (e) {
       console.error('Seasonal broadcast error:', e.message)
+    }
+  }, { timezone: 'Europe/Kiev' })
+
+  // ── Щопонеділка о 09:00 — тижневий звіт адміну ──────────────────────
+  cron.schedule('0 9 * * 1', async () => {
+    if (!ADMIN_ID) return
+    console.log('⏰ Running weekly report...')
+    try {
+      const s = await getWeeklyStats()
+      await bot.api.sendMessage(
+        ADMIN_ID,
+        `📊 *Тижневий звіт — ${AUTOSERVICE.name}*\n\n` +
+          `👥 Нових клієнтів: *${s.newClients}*\n` +
+          `📋 Записів за тиждень: *${s.weekBookings}*\n` +
+          `✅ Виконано: *${s.weekCompleted}*\n` +
+          `❌ Скасовано: *${s.weekCancelled}*\n` +
+          `🏆 Топ послуга: *${s.topService}*`,
+        { parse_mode: 'Markdown' }
+      )
+    } catch (e) {
+      console.error('Weekly report error:', e.message)
     }
   }, { timezone: 'Europe/Kiev' })
 

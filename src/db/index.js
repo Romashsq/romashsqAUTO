@@ -28,6 +28,10 @@ export async function updateClientCar(telegramId, car, carYear = '') {
   await Client.findOneAndUpdate({ telegramId: String(telegramId) }, { car, carYear })
 }
 
+export async function updateClientLang(telegramId, lang) {
+  await Client.findOneAndUpdate({ telegramId: String(telegramId) }, { lang })
+}
+
 // ── Bookings ───────────────────────────────────────────────────────────────
 export async function addBooking(data) {
   const booking = new Booking({ ...data, telegramId: String(data.telegramId) })
@@ -107,4 +111,30 @@ export async function getStats() {
     getTodayBookings(),
   ])
   return { clients, totalBookings, completed, cancelled, today: todayBookings.length }
+}
+
+export async function getWeeklyStats() {
+  const now = new Date()
+  const weekStart = new Date(now)
+  weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1))
+  weekStart.setHours(0, 0, 0, 0)
+  const weekStartStr = weekStart.toISOString().split('T')[0]
+
+  const [newClients, weekBookings, weekCompleted, weekCancelled] = await Promise.all([
+    Client.countDocuments({ createdAt: { $gte: weekStart } }),
+    Booking.countDocuments({ createdAt: { $gte: weekStart } }),
+    Booking.countDocuments({ status: 'готово', updatedAt: { $gte: weekStart } }),
+    Booking.countDocuments({ status: 'скасовано', updatedAt: { $gte: weekStart } }),
+  ])
+
+  // Most popular service this week
+  const popularResult = await Booking.aggregate([
+    { $match: { createdAt: { $gte: weekStart } } },
+    { $group: { _id: '$service', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 1 },
+  ])
+  const topService = popularResult[0] ? `${popularResult[0]._id} (${popularResult[0].count})` : '—'
+
+  return { newClients, weekBookings, weekCompleted, weekCancelled, topService, weekStartStr }
 }

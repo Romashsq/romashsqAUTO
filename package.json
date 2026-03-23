@@ -8,6 +8,7 @@
     "dev": "nodemon src/index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "dotenv": "^16.4.5",
     "googleapis": "^171.4.0",
     "grammy": "^1.31.0",

@@ -12,6 +12,8 @@ import registerPrice from './handlers/price.js'
 import registerInfo from './handlers/info.js'
 import registerMyBookings from './handlers/myBookings.js'
 import registerAdmin, { handleAdminText } from './handlers/admin.js'
+import { askClaude } from './services/claude.js'
+import { t, getLang } from './i18n/index.js'
 
 
 if (!BOT_TOKEN) throw new Error('BOT_TOKEN is not set in .env')
@@ -31,9 +33,15 @@ bot.on('message:text', async (ctx) => {
   if (await handleAdminText(ctx, bot)) return
   if (await handlePhoneInput(ctx)) return
 
-  await ctx.reply('Скористайтесь кнопками меню або надішліть /start 👇', {
-    reply_markup: REPLY_KEYBOARD,
-  })
+  // Try Claude AI for free-text questions
+  const reply = await askClaude(ctx.message.text)
+  const lang = await getLang(ctx.from.id)
+  if (reply) {
+    await ctx.reply(reply, { reply_markup: REPLY_KEYBOARD })
+    return
+  }
+
+  await ctx.reply(t(lang, 'useMenu'), { reply_markup: REPLY_KEYBOARD })
 })
 
 // ── Error handler ──────────────────────────────────────────────────────────
@@ -50,6 +58,7 @@ async function setup() {
     { command: 'start', description: 'Головне меню' },
     { command: 'menu', description: 'Показати меню' },
     { command: 'help', description: 'Допомога' },
+    { command: 'lang', description: 'Змінити мову / Изменить язык' },
   ])
 
   // Shows the "Menu" button in the Telegram command bar
