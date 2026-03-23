@@ -7,7 +7,8 @@ export function buildReplyKeyboard(lang = 'uk') {
   return new Keyboard()
     .text(t(lang, 'btnBook')).text(t(lang, 'btnPrice')).row()
     .text(t(lang, 'btnAddress')).text(t(lang, 'btnHours')).row()
-    .text(t(lang, 'btnContact')).text(t(lang, 'btnMyBookings'))
+    .text(t(lang, 'btnContact')).text(t(lang, 'btnMyBookings')).row()
+    .text(t(lang, 'btnLang'))
     .resized()
     .persistent()
 }
@@ -47,14 +48,23 @@ export default (bot) => {
   })
 
   // ── Language selection ─────────────────────────────────────────────────
-  bot.command('lang', async (ctx) => {
+  const showLangPicker = async (ctx) => {
     const lang = await getLang(ctx.from.id)
-    await ctx.reply(t(lang, 'langSelect'), {
+    const opts = {
       reply_markup: new InlineKeyboard()
         .text('🇺🇦 Українська', 'lang_uk')
         .text('🇷🇺 Русский', 'lang_ru'),
-    })
-  })
+    }
+    if (ctx.callbackQuery) {
+      await ctx.answerCallbackQuery()
+      await ctx.editMessageText(t(lang, 'langSelect'), opts)
+    } else {
+      await ctx.reply(t(lang, 'langSelect'), opts)
+    }
+  }
+
+  bot.command('lang', showLangPicker)
+  bot.hears(['🌐 Мова', '🌐 Язык'], showLangPicker)
 
   bot.callbackQuery('lang_uk', async (ctx) => {
     await ctx.answerCallbackQuery()
